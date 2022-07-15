@@ -1,0 +1,4 @@
+zadd
+zemv
+zrange
+zrmv
