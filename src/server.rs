@@ -34,7 +34,7 @@ impl Server {
 
     pub async fn run(&self) {
         let route = self.server_route();
-        warp::serve(route).run(([0, 0, 0, 0], 3030)).await;
+        warp::serve(route).run(([0, 0, 0, 0], 8080)).await;
     }
 
     fn server_route(
@@ -117,10 +117,7 @@ impl Server {
     async fn get_query(db: Db, key: String) -> Result<impl warp::Reply, warp::Rejection> {
         println!("get query {:?}", key);
 
-        match db.query(&key) {
-            Some(v) => Ok(v),
-            None => Self::not_found(),
-        }
+        db.query(&key).map_or(Self::not_found(), |v| Ok(v))
     }
 
     async fn post_add(db: Db, body: KeyValue) -> Result<impl warp::Reply, warp::Rejection> {

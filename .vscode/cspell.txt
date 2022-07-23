@@ -1,4 +1,0 @@
-zadd
-zemv
-zrange
-zrmv
