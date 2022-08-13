@@ -1,7 +1,9 @@
 use std::{
     collections::HashMap,
-    sync::{Arc, Mutex},
+    sync::{Arc, RwLock},
 };
+
+use crate::Zset;
 
 #[derive(Clone, Debug)]
 pub struct Db {
@@ -10,31 +12,60 @@ pub struct Db {
 
 #[derive(Debug)]
 struct DbImpl {
-    kv: Mutex<HashMap<String, String>>,
+    kv: RwLock<HashMap<String, String>>,
+    zset: RwLock<HashMap<String, RwLock<Zset>>>,
 }
 
 impl Db {
     pub fn new() -> Self {
         Self {
             db: Arc::new(DbImpl {
-                kv: Mutex::new(HashMap::new()),
+                kv: RwLock::new(HashMap::new()),
+                zset: RwLock::new(HashMap::new()),
             }),
         }
     }
 
-    fn db(&self) -> std::sync::MutexGuard<HashMap<String, String>> {
-        self.db.kv.lock().unwrap()
-    }
-
     pub fn add(&self, k: String, v: String) {
-        self.db().insert(k, v);
+        self.db.kv.write().unwrap().insert(k, v);
     }
 
     pub fn del(&self, k: &str) {
-        self.db().remove(k);
+        self.db.kv.write().unwrap().remove(k);
+        self.db.zset.write().unwrap().remove(k);
     }
 
     pub fn query(&self, k: &str) -> Option<String> {
-        self.db().get(k).cloned()
+        self.db.kv.read().unwrap().get(k).cloned()
+    }
+
+    pub fn zadd(&self, key: String, value: String, score: f64) {
+        self.db
+            .zset
+            .write()
+            .unwrap()
+            .entry(key)
+            .or_insert(RwLock::new(Zset::new()))
+            .write()
+            .unwrap()
+            .add(value, score)
+    }
+
+    pub fn zremove(&self, key: &String, value: &String) {
+        self.db
+            .zset
+            .read()
+            .unwrap()
+            .get(key)
+            .map(|set| set.write().unwrap().remove(value));
+    }
+
+    pub fn zrange(&self, key: &String, min: f64, max: f64) -> Vec<String> {
+        self.db
+            .zset
+            .read()
+            .unwrap()
+            .get(key)
+            .map_or(Vec::new(), |set| set.read().unwrap().range(min, max))
     }
 }

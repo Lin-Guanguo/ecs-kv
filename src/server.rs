@@ -16,14 +16,14 @@ struct KeyValue {
 
 #[derive(Debug, Serialize, Deserialize)]
 struct ScoreValue {
-    score: String,
+    score: f64,
     value: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
 struct MinMaxScore {
-    min_score: String,
-    max_score: String,
+    min_score: f64,
+    max_score: f64,
 }
 
 impl Server {
@@ -93,10 +93,6 @@ impl Server {
     ) -> impl warp::Filter<Extract = (Db,), Error = std::convert::Infallible> + Clone {
         let db = self.db.clone();
         warp::any().map(move || db.clone())
-    }
-
-    fn bad_request<E>() -> Result<warp::reply::WithStatus<&'static str>, E> {
-        Ok(warp::reply::with_status("", StatusCode::BAD_REQUEST))
     }
 
     fn ok<E>() -> Result<warp::reply::WithStatus<&'static str>, E> {
@@ -182,45 +178,39 @@ impl Server {
     }
 
     async fn post_zadd(
-        _db: Db,
+        db: Db,
         key: String,
         body: ScoreValue,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         println!("post zadd {:?} {:?}", key, body);
 
+        db.zadd(key, body.value, body.score);
         Self::ok()
     }
 
     async fn post_zrange(
-        _db: Db,
+        db: Db,
         key: String,
         body: MinMaxScore,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         println!("post zrange {:?} {:?}", key, body);
-        let success = false;
-        if success {
-            let response = vec![
-                ScoreValue {
-                    score: "0".to_string(),
-                    value: "value1".to_string(),
-                },
-                ScoreValue {
-                    score: "0".to_string(),
-                    value: "value2".to_string(),
-                },
-            ];
-            Self::json(&response)
+
+        let resp = db.zrange(&key, body.min_score, body.max_score);
+        if resp.len() > 0 {
+            Self::json(&resp)
         } else {
             Self::json_not_found()
         }
     }
 
     async fn get_zrmv(
-        _db: Db,
+        db: Db,
         key: String,
         value: String,
     ) -> Result<impl warp::Reply, warp::Rejection> {
         println!("get zrmv {:?} {:?}", key, value);
+
+        db.zremove(&key, &value);
         Self::ok()
     }
 }
