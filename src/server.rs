@@ -124,20 +124,20 @@ impl Server {
     }
 
     async fn get_init(_db: Db) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("get init");
+        // println!("get init");
 
         Ok(warp::reply::with_status("ok", StatusCode::OK))
     }
 
     async fn get_query(db: Db, key: String) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("get query {:?}", key);
+        // println!("get query {:?}", key);
 
         db.query(&key)
             .map_or(Self::plain_text_not_found(), |v| Self::plain_text(v))
     }
 
     async fn post_add(db: Db, body: KeyValue) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("post add {:?}", body);
+        // println!("post add {:?}", body);
 
         let KeyValue { key: k, value: v } = body;
         db.add(k, v);
@@ -145,14 +145,14 @@ impl Server {
     }
 
     async fn get_del(db: Db, key: String) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("get del {:?}", key);
+        // println!("get del {:?}", key);
 
         db.del(&key);
         Self::ok()
     }
 
     async fn post_list(db: Db, body: Vec<String>) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("post list {:?}", body);
+        // println!("post list {:?}", body);
 
         let ret = body
             .into_iter()
@@ -170,7 +170,7 @@ impl Server {
     }
 
     async fn post_batch(db: Db, body: Vec<KeyValue>) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("post batch {:?}", body);
+        // println!("post batch {:?}", body);
 
         body.into_iter()
             .for_each(|KeyValue { key: k, value: v }| db.add(k, v));
@@ -182,7 +182,7 @@ impl Server {
         key: String,
         body: ScoreValue,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("post zadd {:?} {:?}", key, body);
+        // println!("post zadd {:?} {:?}", key, body);
 
         db.zadd(key, body.value, body.score);
         Self::ok()
@@ -193,7 +193,7 @@ impl Server {
         key: String,
         body: MinMaxScore,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("post zrange {:?} {:?}", key, body);
+        // println!("post zrange {:?} {:?}", key, body);
 
         let resp = db.zrange(&key, body.min_score, body.max_score);
         if resp.len() > 0 {
@@ -208,7 +208,7 @@ impl Server {
         key: String,
         value: String,
     ) -> Result<impl warp::Reply, warp::Rejection> {
-        println!("get zrmv {:?} {:?}", key, value);
+        // println!("get zrmv {:?} {:?}", key, value);
 
         db.zremove(&key, &value);
         Self::ok()
