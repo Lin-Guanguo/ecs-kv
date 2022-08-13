@@ -1,4 +1,3 @@
-use serde_json::json;
 use warp::Filter;
 
 use crate::db::Db;
@@ -55,7 +54,7 @@ impl Server {
             .and_then(Server::post_add);
         let del = self
             .with_ctx()
-            .and(warp::path!("query" / String))
+            .and(warp::path!("del" / String))
             .and_then(Server::get_del);
         let list = self
             .with_ctx()
@@ -140,14 +139,10 @@ impl Server {
 
         let ret = body
             .into_iter()
-            .map(|k| {
-                let v = db.query(&k);
-                (k, v)
-            })
-            .filter(|x| x.1.is_some())
+            .filter_map(|k| db.query(&k).map(|v| (k, v)))
             .map(|x| KeyValue {
                 key: x.0,
-                value: x.1.unwrap(),
+                value: x.1,
             })
             .collect::<Vec<_>>();
         if ret.len() > 0 {

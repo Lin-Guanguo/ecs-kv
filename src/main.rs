@@ -2,7 +2,7 @@ use ecs_project::*;
 
 #[tokio::main]
 async fn main() {
-    println!("hello world");
+    println!("service start");
 
     let db = Db::new();
     let server = Server::new(db);

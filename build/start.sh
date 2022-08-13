@@ -1,0 +1,1 @@
+cd /root/ecs-project && cargo run --release
