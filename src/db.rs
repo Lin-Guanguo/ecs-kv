@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::Zset;
+use crate::{zset::ScoreValue, Zset};
 use dashmap::DashMap;
 
 #[derive(Clone, Debug)]
@@ -65,7 +65,7 @@ impl Db {
         cur_zset.map(|v| v.remove(value));
     }
 
-    pub fn zrange(&self, key: &String, min: f64, max: f64) -> Vec<String> {
+    pub fn zrange(&self, key: &String, min: f64, max: f64) -> Vec<ScoreValue> {
         let cur_zset = self.db.kv.get(key).and_then(|v| match v.value() {
             DbValue::Text(_) => None,
             DbValue::Zset(zset) => Some(zset.clone()),

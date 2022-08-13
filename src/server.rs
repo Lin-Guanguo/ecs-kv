@@ -1,6 +1,6 @@
 use warp::Filter;
 
-use crate::db::Db;
+use crate::{db::Db, zset::ScoreValue};
 use serde_derive::{Deserialize, Serialize};
 use warp::http::StatusCode;
 
@@ -11,12 +11,6 @@ pub struct Server {
 #[derive(Debug, Serialize, Deserialize)]
 struct KeyValue {
     key: String,
-    value: String,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct ScoreValue {
-    score: f64,
     value: String,
 }
 
