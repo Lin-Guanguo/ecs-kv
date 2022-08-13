@@ -2,6 +2,7 @@ use std::sync::Arc;
 
 use crate::{zset::ScoreValue, Zset};
 use dashmap::DashMap;
+use serde_derive::{Deserialize, Serialize};
 
 #[derive(Clone, Debug)]
 pub struct Db {
@@ -11,6 +12,12 @@ pub struct Db {
 #[derive(Debug)]
 struct DbImpl {
     kv: DashMap<String, DbValue>,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct KeyValue {
+    pub key: String,
+    pub value: String,
 }
 
 #[derive(Debug)]
@@ -39,6 +46,12 @@ impl Db {
             DbValue::Text(v) => Some(v.clone()),
             DbValue::Zset(_) => None,
         })
+    }
+
+    pub fn list(&self, keys: Vec<String>) -> Vec<KeyValue> {
+        keys.into_iter()
+            .filter_map(|key| self.query(&key).map(|value| KeyValue { key, value }))
+            .collect()
     }
 
     pub fn zadd(&self, key: String, value: String, score: f64) {

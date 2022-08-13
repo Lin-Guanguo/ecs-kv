@@ -1,17 +1,14 @@
 use warp::Filter;
 
-use crate::{db::Db, zset::ScoreValue};
+use crate::{
+    db::{Db, KeyValue},
+    zset::ScoreValue,
+};
 use serde_derive::{Deserialize, Serialize};
 use warp::http::StatusCode;
 
 pub struct Server {
     db: Db,
-}
-
-#[derive(Debug, Serialize, Deserialize)]
-struct KeyValue {
-    key: String,
-    value: String,
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -148,14 +145,7 @@ impl Server {
     async fn post_list(db: Db, body: Vec<String>) -> Result<impl warp::Reply, warp::Rejection> {
         // println!("post list {:?}", body);
 
-        let ret = body
-            .into_iter()
-            .filter_map(|k| db.query(&k).map(|v| (k, v)))
-            .map(|x| KeyValue {
-                key: x.0,
-                value: x.1,
-            })
-            .collect::<Vec<_>>();
+        let ret = db.list(body);
         if ret.len() > 0 {
             Self::json(&ret)
         } else {
