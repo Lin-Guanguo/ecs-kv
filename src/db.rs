@@ -1,9 +1,7 @@
-use std::{
-    collections::HashMap,
-    sync::{Arc, RwLock},
-};
+use std::sync::Arc;
 
 use crate::Zset;
+use dashmap::DashMap;
 
 #[derive(Clone, Debug)]
 pub struct Db {
@@ -12,60 +10,66 @@ pub struct Db {
 
 #[derive(Debug)]
 struct DbImpl {
-    kv: RwLock<HashMap<String, String>>,
-    zset: RwLock<HashMap<String, RwLock<Zset>>>,
+    kv: DashMap<String, DbValue>,
+}
+
+#[derive(Debug)]
+enum DbValue {
+    Text(String),
+    Zset(Arc<Zset>),
 }
 
 impl Db {
     pub fn new() -> Self {
         Self {
-            db: Arc::new(DbImpl {
-                kv: RwLock::new(HashMap::new()),
-                zset: RwLock::new(HashMap::new()),
-            }),
+            db: Arc::new(DbImpl { kv: DashMap::new() }),
         }
     }
 
-    pub fn add(&self, k: String, v: String) {
-        self.db.kv.write().unwrap().insert(k, v);
+    pub fn add(&self, key: String, value: String) {
+        self.db.kv.insert(key, DbValue::Text(value));
     }
 
-    pub fn del(&self, k: &str) {
-        self.db.kv.write().unwrap().remove(k);
-        self.db.zset.write().unwrap().remove(k);
+    pub fn del(&self, key: &str) {
+        self.db.kv.remove(key);
     }
 
-    pub fn query(&self, k: &str) -> Option<String> {
-        self.db.kv.read().unwrap().get(k).cloned()
+    pub fn query(&self, key: &str) -> Option<String> {
+        self.db.kv.get(key).and_then(|entry| match entry.value() {
+            DbValue::Text(v) => Some(v.clone()),
+            DbValue::Zset(_) => None,
+        })
     }
 
     pub fn zadd(&self, key: String, value: String, score: f64) {
-        self.db
-            .zset
-            .write()
-            .unwrap()
-            .entry(key)
-            .or_insert(RwLock::new(Zset::new()))
-            .write()
-            .unwrap()
-            .add(value, score)
+        let cur_zset = self.db.kv.get(&key).and_then(|v| match v.value() {
+            DbValue::Text(_) => None,
+            DbValue::Zset(zset) => Some(zset.clone()),
+        });
+        let zset = match cur_zset {
+            Some(zset) => zset,
+            None => {
+                let z = Arc::new(Zset::new());
+                self.db.kv.insert(key, DbValue::Zset(z.clone()));
+                z
+            }
+        };
+        zset.add(value, score)
     }
 
-    pub fn zremove(&self, key: &String, value: &String) {
-        self.db
-            .zset
-            .read()
-            .unwrap()
-            .get(key)
-            .map(|set| set.write().unwrap().remove(value));
+    pub fn zremove(&self, key: &str, value: &String) {
+        let cur_zset = self.db.kv.get(key).and_then(|v| match v.value() {
+            DbValue::Text(_) => None,
+            DbValue::Zset(zset) => Some(zset.clone()),
+        });
+        cur_zset.map(|v| v.remove(value));
     }
 
     pub fn zrange(&self, key: &String, min: f64, max: f64) -> Vec<String> {
-        self.db
-            .zset
-            .read()
-            .unwrap()
-            .get(key)
-            .map_or(Vec::new(), |set| set.read().unwrap().range(min, max))
+        let cur_zset = self.db.kv.get(key).and_then(|v| match v.value() {
+            DbValue::Text(_) => None,
+            DbValue::Zset(zset) => Some(zset.clone()),
+        });
+        cur_zset.map_or_else(|| Vec::new(), |v| v.range(min, max))
     }
 }
