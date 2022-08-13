@@ -103,8 +103,28 @@ impl Server {
         Ok(warp::reply::with_status("", StatusCode::OK))
     }
 
-    fn not_found<R>() -> Result<R, warp::Rejection> {
-        Err(warp::reject::not_found())
+    fn plain_text<E>(v: String) -> Result<warp::reply::WithStatus<String>, E> {
+        Ok(warp::reply::with_status(v, StatusCode::OK))
+    }
+
+    fn plain_text_not_found<E>() -> Result<warp::reply::WithStatus<String>, E> {
+        Ok(warp::reply::with_status("".into(), StatusCode::NOT_FOUND))
+    }
+
+    fn json<J: serde::ser::Serialize, E>(
+        v: J,
+    ) -> Result<warp::reply::WithStatus<warp::reply::Json>, E> {
+        Ok(warp::reply::with_status(
+            warp::reply::json(&v),
+            StatusCode::OK,
+        ))
+    }
+
+    fn json_not_found<E>() -> Result<warp::reply::WithStatus<warp::reply::Json>, E> {
+        Ok(warp::reply::with_status(
+            warp::reply::json(&""),
+            StatusCode::NOT_FOUND,
+        ))
     }
 
     async fn get_init(_db: Db) -> Result<impl warp::Reply, warp::Rejection> {
@@ -116,7 +136,8 @@ impl Server {
     async fn get_query(db: Db, key: String) -> Result<impl warp::Reply, warp::Rejection> {
         println!("get query {:?}", key);
 
-        db.query(&key).map_or(Self::not_found(), |v| Ok(v))
+        db.query(&key)
+            .map_or(Self::plain_text_not_found(), |v| Self::plain_text(v))
     }
 
     async fn post_add(db: Db, body: KeyValue) -> Result<impl warp::Reply, warp::Rejection> {
@@ -146,9 +167,9 @@ impl Server {
             })
             .collect::<Vec<_>>();
         if ret.len() > 0 {
-            Ok(warp::reply::json(&ret))
+            Self::json(&ret)
         } else {
-            Self::not_found()
+            Self::json_not_found()
         }
     }
 
@@ -174,7 +195,7 @@ impl Server {
         _db: Db,
         key: String,
         body: MinMaxScore,
-    ) -> Result<warp::reply::Json, warp::Rejection> {
+    ) -> Result<impl warp::Reply, warp::Rejection> {
         println!("post zrange {:?} {:?}", key, body);
         let success = false;
         if success {
@@ -188,9 +209,9 @@ impl Server {
                     value: "value2".to_string(),
                 },
             ];
-            Ok(warp::reply::json(&response))
+            Self::json(&response)
         } else {
-            Self::not_found()
+            Self::json_not_found()
         }
     }
 
