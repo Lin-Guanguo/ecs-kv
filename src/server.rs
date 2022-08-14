@@ -50,19 +50,17 @@ impl Server {
                 let _ = uri.next().ok_or(ServerError::Rejection())?;
                 let m = uri.next().ok_or(ServerError::Rejection())?;
                 match m {
-                    "init" => Ok(hyper::Response::builder().body(Body::from("ok")).unwrap()),
+                    "init" => Ok(hyper::Response::new(Body::from("ok"))),
                     "del" => {
                         let key = uri.next().ok_or(ServerError::Rejection())?;
                         db.del(key);
-                        Ok(hyper::Response::builder().body(Body::empty()).unwrap())
+                        Ok(hyper::Response::new(Body::empty()))
                     }
                     "query" => {
                         let key = uri.next().ok_or(ServerError::Rejection())?;
                         let value = db.query(key);
                         match value {
-                            Some(value) => {
-                                Ok(hyper::Response::builder().body(Body::from(value)).unwrap())
-                            }
+                            Some(value) => Ok(hyper::Response::new(Body::from(value))),
                             None => Ok(hyper::Response::builder()
                                 .status(404)
                                 .body(Body::empty())
@@ -73,7 +71,7 @@ impl Server {
                         let key = uri.next().ok_or(ServerError::Rejection())?;
                         let value = uri.next().ok_or(ServerError::Rejection())?;
                         db.zremove(key, value);
-                        Ok(hyper::Response::builder().body(Body::empty()).unwrap())
+                        Ok(hyper::Response::new(Body::empty()))
                     }
                     _ => Err(ServerError::Rejection()),
                 }
@@ -105,9 +103,7 @@ impl Server {
                                 .body(Body::empty())
                                 .unwrap())
                         } else {
-                            Ok(hyper::Response::builder()
-                                .body(Body::from(serde_json::to_vec(&resp)?))
-                                .unwrap())
+                            Ok(hyper::Response::new(Body::from(serde_json::to_vec(&resp)?)))
                         }
                     }
                     "zadd" => {
@@ -128,9 +124,7 @@ impl Server {
                                 .body(Body::empty())
                                 .unwrap())
                         } else {
-                            Ok(hyper::Response::builder()
-                                .body(Body::from(serde_json::to_vec(&resp)?))
-                                .unwrap())
+                            Ok(hyper::Response::new(Body::from(serde_json::to_vec(&resp)?)))
                         }
                     }
                     _ => Err(ServerError::Rejection()),
