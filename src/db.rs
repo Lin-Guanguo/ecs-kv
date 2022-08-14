@@ -15,7 +15,7 @@ pub struct Db {
 
 #[derive(Debug)]
 struct DbImpl {
-    kv: [DashMap<String, DbValue>; 4],
+    kv: [DashMap<String, DbValue>; 32],
 }
 
 #[derive(Debug, Serialize, Deserialize)]
@@ -39,6 +39,34 @@ impl Db {
                     DashMap::new(),
                     DashMap::new(),
                     DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
+                    DashMap::new(),
                 ],
             }),
         }
@@ -47,7 +75,7 @@ impl Db {
     fn hash(k: &str) -> usize {
         let mut hasher = DefaultHasher::new();
         k.hash(&mut hasher);
-        hasher.finish() as usize % 4
+        hasher.finish() as usize % 32
     }
 
     pub fn add(&self, kv: KeyValue) {
