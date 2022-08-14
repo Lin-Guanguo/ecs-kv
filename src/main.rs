@@ -9,7 +9,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error + Send + Sync>> {
     println!("service start hyper");
 
     let db = Db::new();
-    let addr: SocketAddr = ([0, 0, 0, 0], 3000).into();
+    let addr: SocketAddr = ([0, 0, 0, 0], 8080).into();
     let listener = TcpListener::bind(addr).await?;
 
     loop {

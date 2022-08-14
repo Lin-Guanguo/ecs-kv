@@ -31,7 +31,7 @@ impl Zset {
         self.vk.write().unwrap().insert((score, key));
     }
 
-    pub fn remove(&self, k: &String) {
+    pub fn remove(&self, k: &str) {
         let mut vk = self.vk.write().unwrap();
         self.kv.remove(k).map(|(k, v)| vk.remove(&(v, k)));
     }

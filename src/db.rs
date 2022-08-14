@@ -33,8 +33,12 @@ impl Db {
         }
     }
 
-    pub fn add(&self, key: String, value: String) {
-        self.db.kv.insert(key, DbValue::Text(value));
+    pub fn add(&self, kv: KeyValue) {
+        self.db.kv.insert(kv.key, DbValue::Text(kv.value));
+    }
+
+    pub fn batch(&self, keys: Vec<KeyValue>) {
+        keys.into_iter().for_each(|kv| self.add(kv))
     }
 
     pub fn del(&self, key: &str) {
@@ -70,7 +74,7 @@ impl Db {
         zset.add(value, score)
     }
 
-    pub fn zremove(&self, key: &str, value: &String) {
+    pub fn zremove(&self, key: &str, value: &str) {
         let cur_zset = self.db.kv.get(key).and_then(|v| match v.value() {
             DbValue::Text(_) => None,
             DbValue::Zset(zset) => Some(zset.clone()),
@@ -78,7 +82,7 @@ impl Db {
         cur_zset.map(|v| v.remove(value));
     }
 
-    pub fn zrange(&self, key: &String, min: f64, max: f64) -> Vec<ScoreValue> {
+    pub fn zrange(&self, key: &str, min: f64, max: f64) -> Vec<ScoreValue> {
         let cur_zset = self.db.kv.get(key).and_then(|v| match v.value() {
             DbValue::Text(_) => None,
             DbValue::Zset(zset) => Some(zset.clone()),
